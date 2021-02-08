@@ -4,17 +4,19 @@ import Axios from "axios";
 
 //component imports
 import UnitList from "../UnitList/UnitList";
+import UnitDisplay from "../UnitDisplay/UnitDisplay";
 
 //constant urls for api calls
 const registerURL = "https://api-staging.paritygo.com/sensors/api/thermostat/register/";
 
 export default function Dashboard() {
 
-    //state tracks the info of each housing unit
-    const [units, setUnits] = useState(localStorage.getItem("units"));
+    //state tracks the info of each housing unit, gets info from local browser storage
+    const [units, setUnits] = useState(JSON.parse(localStorage.getItem("units")));
     //state tracks currently selected housing unit/thermostat
     const [selectedUnit, setSelectedUnit] = useState(null);
 
+    //the function called when registering a new thermostat unit
     const register = ()=>{
         Axios.post(registerURL)
             .then(function (response) {
@@ -37,16 +39,18 @@ export default function Dashboard() {
             });
     }
 
+    //function called when a unit is selected off the sidebar
     const select = (unit)=>{
-        console.log(unit.id);
-        // setSelectedUnit(unit);
+        setSelectedUnit(unit);
     }
 
+    //conditional render depending on whether there are any registered units or not
     if(units){
         return (
             <div className="dashboard">
                 <div className="dash__register--big" onClick={register}>Register New Thermostat</div>
                 <UnitList units={units.unitArr} key={units.unitArr} select={select}/>
+                {selectedUnit && <UnitDisplay unit={selectedUnit} />}
             </div>
         )
     } else {

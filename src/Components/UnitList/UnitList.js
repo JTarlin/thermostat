@@ -1,6 +1,4 @@
 export default function UnitList(props) {
-
-    console.log(props.units);
     const units = props.units;
     const select = props.select;
 

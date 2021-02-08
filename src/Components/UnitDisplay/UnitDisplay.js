@@ -8,13 +8,21 @@ const sensorURL = "http://api-staging.paritygo.com/sensors/api/sensors/";
 export default function UnitDisplay(props) {
     //get the basic unit info from props
     const unit = props.unit;
+    const toggleUnitState = props.toggleUnitState;
 
     //use state to hold the responses from api calls
     const [tempData, setTempData] = useState(null);
     const [outdoorData, setOutdoorData] = useState(null);
     const [currentTemp, setCurrentTemp] = useState(null);
     const [currentOutdoor, setCurrentOutdoor] = useState(null);
-    const [activeTracker, setActiveTracker] = useState(null);
+    //track data for individual units
+    const [activeTracker, setActiveTracker] = useState(null); //tracks sensor data on indoor and outdoor temp
+    const [autoMode, setAutoMode] = useState(false); //is the thermostat in auto mode?
+    //set auto mode to true depending on unit state
+    if(!autoMode && unit.state==="Auto_standby"||unit.state==="auto_heat"||unit.state==="auto_cool"){
+        setAutoMode(true);
+    }
+    const [desiredTemp, setDesiredTemp] = useState(25); //set 25 as default "room" temperature
 
     //gets the time that it is right now (from system time)
     const getCurrentTimestamp = ()=>{
@@ -59,6 +67,17 @@ export default function UnitDisplay(props) {
             });
     }
 
+    const toggleActive = ()=>{
+        console.log(unit.state);
+        if(unit.state==="off") {
+            toggleUnitState(unit, "Auto_standby");
+            setAutoMode(true);
+        } else {
+            toggleUnitState(unit, "off");
+            setAutoMode(false);
+        }
+    }
+
     //when a new unit is loaded reset the data grabber
     useEffect(()=> {
         if(activeTracker) {clearInterval(activeTracker)}; //if there is an active tracker when we switch units, clear it
@@ -75,9 +94,33 @@ export default function UnitDisplay(props) {
     return(
         <div>
             {unit.id} <br/>
-            {unit.state}
-            {currentTemp}
-            {currentOutdoor}
+            <div onClick={()=>{toggleActive()}}>
+                {unit.state==="off" && "Turn On"}
+                {unit.state!=="off" && "Turn Off"}
+            </div>
+            {unit.state!=="off" &&
+            <div>
+                <div>
+                    Current Desired Temperature: <br />
+                    <div onClick={()=>{setDesiredTemp(desiredTemp+1)}}>+</div>
+                    {desiredTemp}
+                    <div onClick={()=>{setDesiredTemp(desiredTemp-1)}}>-</div>
+                </div>
+                <div onClick={()=>{
+                    toggleUnitState(unit, "heat");
+                    setAutoMode(false);
+                }}>Heat</div>
+                <div onClick={()=>{
+                    toggleUnitState(unit, "cool");
+                    setAutoMode(false);
+                }}>Cool</div>
+                <div onClick={()=>{
+                    toggleUnitState(unit, "Auto_standby");
+                    setAutoMode(true);
+                }}>Auto</div>
+            </div>}
+            Indoor Temperature: {currentTemp}<br/>
+            Outdoor Temperature: {currentOutdoor}
         </div>
     )
     

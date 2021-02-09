@@ -6,9 +6,29 @@ import {useEffect, useState} from "react";
 const sensorURL = "http://api-staging.paritygo.com/sensors/api/sensors/";
 
 export default function UnitDisplay(props) {
-    //get the basic unit info from props
-    const unit = props.unit;
-    const toggleUnitState = props.toggleUnitState;
+    const unitID = props.unitID;
+    console.log("re-render the unitdisplay for unit ", unitID);
+    //the unit being displayed is held in state
+    const [currentUnit, setCurrentUnit] = useState({id: unitID, desiredTemp: 25, state: "off"});
+
+    if(currentUnit){console.log("the currentUnit for ", unitID, " is ", currentUnit)};
+
+    //we will often want to save the current unit's state to local storage to persist data
+    //input state of type {id: string, state: string, desiredTemp: number}
+    const storeUnitState = (unitState)=>{
+        console.log("storeUnitState called");
+        let storageSnapshot = JSON.parse(localStorage.getItem("unitInfo"));
+        if(storageSnapshot){
+            console.log("storage snapshot exists");
+            //store the state and desiredTemp values into the storage snapshot
+            storageSnapshot[unitState.id] = {state: unitState.state, setTemp: unitState.desiredTemp};
+        } else {
+            console.log("storage snapshot does not exist, here's what we get: ", storageSnapshot);
+            console.log("heres the unparsed stored unitInfo: ", localStorage.getItem("unitInfo"));
+        }
+        // return the storageSnapshot to localstorage
+        localStorage.setItem('unitInfo', JSON.stringify(storageSnapshot));
+    }
 
     //use state to hold the responses from api calls
     const [tempData, setTempData] = useState(null);
@@ -17,12 +37,6 @@ export default function UnitDisplay(props) {
     const [currentOutdoor, setCurrentOutdoor] = useState(null);
     //track data for individual units
     const [activeTracker, setActiveTracker] = useState(null); //tracks sensor data on indoor and outdoor temp
-    const [autoMode, setAutoMode] = useState(false); //is the thermostat in auto mode?
-    //set auto mode to true depending on unit state
-    if(!autoMode && unit.state==="Auto_standby"||unit.state==="auto_heat"||unit.state==="auto_cool"){
-        setAutoMode(true);
-    }
-    const [desiredTemp, setDesiredTemp] = useState(25); //set 25 as default "room" temperature
 
     //gets the time that it is right now (from system time)
     const getCurrentTimestamp = ()=>{
@@ -68,18 +82,51 @@ export default function UnitDisplay(props) {
     }
 
     const toggleActive = ()=>{
-        console.log(unit.state);
-        if(unit.state==="off") {
-            toggleUnitState(unit, "Auto_standby");
-            setAutoMode(true);
-        } else {
-            toggleUnitState(unit, "off");
-            setAutoMode(false);
+        console.log("toggle active running:", currentUnit);
+        if(currentUnit.state==="off") {
+            //if we were turned off, set mode to auto by default (determine which auto type in the autocheck fn)
+            autoCheck();
+        }
+        else {
+            console.log("setting mode to off");
+            setCurrentUnit({...currentUnit, state: "off"});
+            storeUnitState({id: currentUnit.id, desiredTemp: currentUnit.desiredTemp, state: "off"});
+        }
+    }
+
+    const autoCheck = ()=>{
+        console.log("at the start of autocheck the state is this:", currentUnit);
+        // if its hot, cool
+        if(currentTemp>currentUnit.desiredTemp){
+            //we won't cool if it's less than 0 C outside
+            if(currentOutdoor>0){
+                console.log("autocheck setting mode to auto_cool");
+                setCurrentUnit({...currentUnit, state: "auto_cool"});
+                storeUnitState({id: currentUnit.id, state: "auto_cool", desiredTemp: currentUnit.desiredTemp});
+                setTimeout(()=>{console.log("autocheck set currentUnit to: ", currentUnit)}, 1000);
+            } else {
+                console.log("autocheck setting mode to auto_standby");
+                setCurrentUnit({...currentUnit, state: "Auto_standby"});
+                storeUnitState({id: currentUnit.id, state: "Auto_standby", desiredTemp: currentUnit.desiredTemp});
+                setTimeout(()=>{console.log("autocheck set currentUnit to: ", currentUnit)}, 1000);
+            }
+        } else if (currentTemp<currentUnit.desiredTemp){ //if its cold, heat
+            console.log("autocheck setting mode to auto_heat");
+            setCurrentUnit({...currentUnit, state: "auto_heat"});
+            storeUnitState({id: currentUnit.id, state: "auto_heat", desiredTemp: currentUnit.desiredTemp});
+            setTimeout(()=>{console.log("autocheck set currentUnit to: ", currentUnit)}, 1000);
+        } else { //if its exactly what we want, stand by
+            console.log("autocheck setting mode to auto_standby");
+            setCurrentUnit({...currentUnit, state: "Auto_standby"});
+            storeUnitState({id: currentUnit.id, state: "Auto_standby", desiredTemp: currentUnit.desiredTemp});
+            setTimeout(()=>{console.log("autocheck set currentUnit to: ", currentUnit)}, 1000);
         }
     }
 
     //when a new unit is loaded reset the data grabber
     useEffect(()=> {
+        console.log("the changed unitID is registered, useEffect is running");
+        console.log("useEffect sees the current unit state as ", currentUnit, " (before changes)");
         if(activeTracker) {clearInterval(activeTracker)}; //if there is an active tracker when we switch units, clear it
         //grab a first data point for each measurement
         getData("temperature-1", 15);
@@ -88,35 +135,58 @@ export default function UnitDisplay(props) {
         setActiveTracker(setInterval(()=>{
             getData("temperature-1", 15);
             getData("outdoor-1", 15);
-        }, 3000)); //60000 is 1 minute, an acceptable refresh rate for sensors that update every 5 minutes
-    }, [unit.id])
+        }, 60000)); //60000 is 1 minute, an acceptable refresh rate for sensors that update every 5 minutes
+
+        //if we switch to a new unit, we load that unit's data from storage if any
+        if(currentUnit.id!==unitID){
+            //now load stored data into the state
+            const storedUnitInfo = JSON.parse(localStorage.getItem("unitInfo"));
+            let storedUnitData;
+            if(storedUnitInfo && storedUnitInfo[unitID] && storedUnitInfo[unitID].state && storedUnitInfo[unitID].setTemp){
+                //if there is data about this unit stored locally, retrieve it!
+                storedUnitData = {id: unitID, state: storedUnitInfo[unitID].state, desiredTemp: storedUnitInfo[unitID].setTemp};
+                setCurrentUnit(storedUnitData);
+            } else {
+                //there was no stored data, setting current unit to default settings
+                storeUnitState({id: unitID, desiredTemp: 25, state: "off"});
+                setCurrentUnit({id: unitID, desiredTemp: 25, state: "off"});
+            }
+        } else {
+            //this is the initial component render and there was no stored data, setting current unit to default settings
+            storeUnitState({id: unitID, desiredTemp: 25, state: "off"});
+            setCurrentUnit({id: unitID, desiredTemp: 25, state: "off"});
+        }
+    }, [unitID])
 
     return(
         <div>
-            {unit.id} <br/>
+            {currentUnit.id} <br/>
+            {currentUnit.state} <br/>
             <div onClick={()=>{toggleActive()}}>
-                {unit.state==="off" && "Turn On"}
-                {unit.state!=="off" && "Turn Off"}
+                {currentUnit.state==="off" && "Turn On"}
+                {currentUnit.state!=="off" && "Turn Off"}
             </div>
-            {unit.state!=="off" &&
+            {currentUnit.state!=="off" &&
             <div>
                 <div>
                     Current Desired Temperature: <br />
-                    <div onClick={()=>{setDesiredTemp(desiredTemp+1)}}>+</div>
-                    {desiredTemp}
-                    <div onClick={()=>{setDesiredTemp(desiredTemp-1)}}>-</div>
+                    <div onClick={()=>{console.log("increasing temp by 1")}}>+</div>
+                    {currentUnit.desiredTemp}
+                    <div onClick={()=>{console.log("decreasing temp by 1")}}>-</div>
                 </div>
                 <div onClick={()=>{
-                    toggleUnitState(unit, "heat");
-                    setAutoMode(false);
+                    // toggleUnitState(unit, "heat");
+                    setCurrentUnit({...currentUnit, state: "heat"});
+                    console.log("set current unit state to heating");
                 }}>Heat</div>
                 <div onClick={()=>{
-                    toggleUnitState(unit, "cool");
-                    setAutoMode(false);
+                    setCurrentUnit({...currentUnit, state: "cool"});
+                    console.log("set current unit state to cool");
                 }}>Cool</div>
                 <div onClick={()=>{
-                    toggleUnitState(unit, "Auto_standby");
-                    setAutoMode(true);
+                    console.log("set current unit state to auto");
+                    setCurrentUnit({...currentUnit, state: "Auto_standby"});
+                    autoCheck();
                 }}>Auto</div>
             </div>}
             Indoor Temperature: {currentTemp}<br/>

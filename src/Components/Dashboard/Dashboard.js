@@ -87,26 +87,6 @@ export default function Dashboard() {
         )
     }
 
-    const changeSetTemp = (unitToChange, amount)=>{
-        console.log("changesettemp called")
-        let modifiedUnit = {id: unitToChange.id, state: unitToChange.state, setTemp: (unitToChange.setTemp+amount)}; //create new object to store modified unit
-        let modifiedUnitArray = units.unitArr;
-        let idx = 0;
-        for(let i=0; i<modifiedUnitArray.length;i++) {
-            if(modifiedUnitArray[i].id === unitToChange.id) {
-                modifiedUnitArray[i]=modifiedUnit;
-                idx = i;
-                break;
-            }
-        }
-        //set our state to reflect the new unit set temp
-        setSelectedUnit(modifiedUnit);
-        setUnits({unitArr: modifiedUnitArray});
-        console.log(units.unitArr[idx].setTemp + "NEW TURTLE2??");
-        //set the local stored values to reflect the new unit set temp
-        localStorage.setItem('units', JSON.stringify({unitArr: modifiedUnitArray}));
-    }
-
     //conditional render depending on whether there are any registered units or not
     if(units){
         return (

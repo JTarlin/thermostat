@@ -4,27 +4,20 @@ import {useEffect, useState} from "react";
 
 //api url for sensors
 const sensorURL = "http://api-staging.paritygo.com/sensors/api/sensors/";
+const thermostatURL = "https://api-staging.paritygo.com/sensors/api/thermostat/";
 
 export default function UnitDisplay(props) {
     const unitID = props.unitID;
-    console.log("re-render the unitdisplay for unit ", unitID);
     //the unit being displayed is held in state
     const [currentUnit, setCurrentUnit] = useState({id: unitID, desiredTemp: 25, state: "off"});
-
-    if(currentUnit){console.log("the currentUnit for ", unitID, " is ", currentUnit)};
-
+    const [desiredTemp, setDesiredTemp] = useState(25);
     //we will often want to save the current unit's state to local storage to persist data
     //input state of type {id: string, state: string, desiredTemp: number}
     const storeUnitState = (unitState)=>{
-        console.log("storeUnitState called");
         let storageSnapshot = JSON.parse(localStorage.getItem("unitInfo"));
         if(storageSnapshot){
-            console.log("storage snapshot exists");
             //store the state and desiredTemp values into the storage snapshot
             storageSnapshot[unitState.id] = {state: unitState.state, setTemp: unitState.desiredTemp};
-        } else {
-            console.log("storage snapshot does not exist, here's what we get: ", storageSnapshot);
-            console.log("heres the unparsed stored unitInfo: ", localStorage.getItem("unitInfo"));
         }
         // return the storageSnapshot to localstorage
         localStorage.setItem('unitInfo', JSON.stringify(storageSnapshot));
@@ -71,6 +64,12 @@ export default function UnitDisplay(props) {
                 if(sensorSlug==="temperature-1"){
                     setTempData(pastPoints);
                     setCurrentTemp(currentReading);
+                    //if the temperature reading has just changed we may want to update our auto-type
+                    console.log("In data get log the desired temp,new desired temp state, and the current indoor temp reading");
+                    console.log(unitID);
+                    console.log("the currentUnit.desiredTemp is: ", currentUnit.desiredTemp);
+                    console.log("the desiredTemp is: ", desiredTemp);
+                    console.log("current roomtemp reading: ", currentReading);
                 } else if(sensorSlug==="outdoor-1"){
                     setOutdoorData(pastPoints);
                     setCurrentOutdoor(currentReading);
@@ -82,90 +81,102 @@ export default function UnitDisplay(props) {
     }
 
     const toggleActive = ()=>{
-        console.log("toggle active running:", currentUnit);
         if(currentUnit.state==="off") {
             //if we were turned off, set mode to auto by default (determine which auto type in the autocheck fn)
-            autoCheck(currentUnit.desiredTemp);
+            autoCheck(unitID, currentUnit.desiredTemp);
         }
         else {
-            console.log("setting mode to off");
             setCurrentUnit({...currentUnit, state: "off"});
             storeUnitState({id: currentUnit.id, desiredTemp: currentUnit.desiredTemp, state: "off"});
         }
     }
 
-    const autoCheck = (setTemp)=>{
-        console.log("at the start of autocheck the state is this:", currentUnit);
+    const autoCheck = (id, setTemp)=>{
+        setDesiredTemp(setTemp);
+        console.log("autocheck is running and here's the settemp: ",setTemp);
         // if its hot, cool
         if(currentTemp>setTemp){
             //we won't cool if it's less than 0 C outside
             if(currentOutdoor>0){
-                console.log("autocheck setting mode to auto_cool");
-                setCurrentUnit({...currentUnit, desiredTemp:setTemp, state: "auto_cool"});
-                storeUnitState({id: currentUnit.id, state: "auto_cool", desiredTemp: setTemp});
-                setTimeout(()=>{console.log("autocheck set currentUnit to: ", currentUnit)}, 1000);
+                setCurrentUnit({id: id, desiredTemp:setTemp, state: "auto_cool"});
+                storeUnitState({id: id, state: "auto_cool", desiredTemp: setTemp});
+                //update the unit mode on the backend
+                Axios.patch(thermostatURL+id+"/", 
+                    {state: "auto_cool"}
+                );
             } else {
-                console.log("autocheck setting mode to auto_standby");
-                setCurrentUnit({...currentUnit, desiredTemp:setTemp, state: "Auto_standby"});
-                storeUnitState({id: currentUnit.id, state: "Auto_standby", desiredTemp: setTemp});
-                setTimeout(()=>{console.log("autocheck set currentUnit to: ", currentUnit)}, 1000);
+                setCurrentUnit({id: id, desiredTemp:setTemp, state: "Auto_standby"});
+                storeUnitState({id: id, state: "Auto_standby", desiredTemp: setTemp});
+                //update the unit mode on the backend
+                Axios.patch(thermostatURL+id+"/", 
+                    {state: "Auto_standby"}
+                );
             }
         } else if (currentTemp<setTemp){ //if its cold, heat
-            console.log("autocheck setting mode to auto_heat");
-            setCurrentUnit({...currentUnit, desiredTemp:setTemp, state: "auto_heat"});
-            storeUnitState({id: currentUnit.id, state: "auto_heat", desiredTemp: setTemp});
-            setTimeout(()=>{console.log("autocheck set currentUnit to: ", currentUnit)}, 1000);
+            setCurrentUnit({id: id, desiredTemp:setTemp, state: "auto_heat"});
+            storeUnitState({id: id, state: "auto_heat", desiredTemp: setTemp});
+            //update the unit mode on the backend
+            Axios.patch(thermostatURL+id+"/", 
+                {state: "auto_heat"}
+            );
         } else { //if its exactly what we want, stand by
-            console.log("autocheck setting mode to auto_standby");
-            setCurrentUnit({...currentUnit, desiredTemp:setTemp, state: "Auto_standby"});
-            storeUnitState({id: currentUnit.id, state: "Auto_standby", desiredTemp: setTemp});
-            setTimeout(()=>{console.log("autocheck set currentUnit to: ", currentUnit)}, 1000);
+            setCurrentUnit({id: id, desiredTemp:setTemp, state: "Auto_standby"});
+            storeUnitState({id: id, state: "Auto_standby", desiredTemp: setTemp});
+            //update the unit mode on the backend
+            Axios.patch(thermostatURL+id+"/", 
+                {state: "Auto_standby"}
+            );
         }
     }
 
     const setTemperature = (amount)=>{
-        let modifiedSetTemp = currentUnit.desiredTemp+amount;
+        // let modifiedSetTemp = currentUnit.desiredTemp+amount;
+        let modifiedSetTemp = desiredTemp+amount;
         //because we only set desired temp in auto mode
-        autoCheck(modifiedSetTemp);
+        autoCheck(unitID, modifiedSetTemp);
     }
 
-    //when a new unit is loaded reset the data grabber
+    //when a new unit is loaded reset the data grabber and ensure the correct data is held in state
     useEffect(()=> {
-        console.log("the changed unitID is registered, useEffect is running");
-        console.log("useEffect sees the current unit state as ", currentUnit, " (before changes)");
-        if(activeTracker) {clearInterval(activeTracker)}; //if there is an active tracker when we switch units, clear it
+        //on new unit clear the data gathering of the old unit
+        if(activeTracker) {clearTimeout(activeTracker)}; //if there is an active tracker when we switch units, clear it
         //grab a first data point for each measurement
         getData("temperature-1", 15);
         getData("outdoor-1", 15);
-        //set up new tracker for current unit
-        setActiveTracker(setInterval(()=>{
-            getData("temperature-1", 15);
-            getData("outdoor-1", 15);
-            if(currentUnit.state==="auto_heat"||currentUnit.state==="auto_cool"||currentUnit.state==="Auto_standby"){
-                autoCheck(currentUnit.desiredTemp);
-            }
-        }, 60000)); //60000 is 1 minute, an acceptable refresh rate for sensors that update every 5 minutes
+        //get data from localstorage 
+        const unitInfo = JSON.parse(localStorage.getItem("unitInfo"));
 
         //if we switch to a new unit, we load that unit's data from storage if any
-        if(currentUnit.id!==unitID){
-            //now load stored data into the state
-            const storedUnitInfo = JSON.parse(localStorage.getItem("unitInfo"));
-            let storedUnitData;
-            if(storedUnitInfo && storedUnitInfo[unitID] && storedUnitInfo[unitID].state && storedUnitInfo[unitID].setTemp){
-                //if there is data about this unit stored locally, retrieve it!
-                storedUnitData = {id: unitID, state: storedUnitInfo[unitID].state, desiredTemp: storedUnitInfo[unitID].setTemp};
-                setCurrentUnit(storedUnitData);
-            } else {
-                //there was no stored data, setting current unit to default settings
-                storeUnitState({id: unitID, desiredTemp: 25, state: "off"});
-                setCurrentUnit({id: unitID, desiredTemp: 25, state: "off"});
-            }
+
+        if(unitInfo && unitInfo[unitID] && unitInfo[unitID].state && unitInfo[unitID].setTemp){
+            //if there is data about this unit stored locally, retrieve it!
+            let storedUnitData = {id: unitID, state: unitInfo[unitID].state, desiredTemp: unitInfo[unitID].setTemp};
+            let tempObject = storedUnitData;
+            setCurrentUnit(tempObject);
         } else {
-            //this is the initial component render and there was no stored data, setting current unit to default settings
+            //there was no stored data, setting current unit to default settings
             storeUnitState({id: unitID, desiredTemp: 25, state: "off"});
             setCurrentUnit({id: unitID, desiredTemp: 25, state: "off"});
         }
+        
+        //set the desired temp
+        if(unitInfo){
+            if(unitInfo[unitID]){
+                setDesiredTemp(unitInfo[unitID].setTemp);
+            }
+        }
     }, [unitID])
+
+    //refresh the data regularly to check if temperature has changed (every 10000mS)
+    useEffect(()=>{
+        //clear any excess trackers so that only one is active at a time
+        clearTimeout(activeTracker);
+        //set up new tracker for current unit
+        setActiveTracker(setTimeout(()=>{
+            getData("temperature-1", 15);
+            getData("outdoor-1", 15);
+        }, 5000)); //60000 is 1 minute, an acceptable refresh rate for sensors that update every 5 minutes
+    }, [unitID, currentTemp, currentOutdoor, tempData, outdoorData])
 
     return(
         <div>
@@ -182,7 +193,7 @@ export default function UnitDisplay(props) {
                 <div>
                     Current Desired Temperature: <br />
                     <div onClick={()=>{setTemperature(1)}}>+</div>
-                    {currentUnit.desiredTemp}
+                    {desiredTemp}
                     <div onClick={()=>{setTemperature(-1)}}>-</div>
                 </div>}
                 
@@ -190,20 +201,26 @@ export default function UnitDisplay(props) {
                     // toggleUnitState(unit, "heat");
                     setCurrentUnit({...currentUnit, state: "heat"});
                     storeUnitState({...currentUnit, state: "heat"});
+                    //update the unit mode on the backend
+                    Axios.patch(thermostatURL+unitID+"/", 
+                        {state: "heat"}
+                    );
                 }}>Heat</div>
                 <div onClick={()=>{
                     if(currentOutdoor>0){
                         setCurrentUnit({...currentUnit, state: "cool"});
                         storeUnitState({...currentUnit, state: "cool"});
-                        console.log("set current unit state to cool");
+                        //update the unit mode on the backend
+                        Axios.patch(thermostatURL+unitID+"/", 
+                            {state: "cool"}
+                        );
                     } else (
                         alert("Cannot cool unit while temperatures are at or below 0 °C")
                     )
                     
                 }}>Cool</div>
                 <div onClick={()=>{
-                    console.log("set current unit state to auto");
-                    autoCheck(currentUnit.desiredTemp);
+                    autoCheck(unitID, currentUnit.desiredTemp);
                 }}>Auto</div>
             </div>}
             Indoor Temperature: {currentTemp}<br/>

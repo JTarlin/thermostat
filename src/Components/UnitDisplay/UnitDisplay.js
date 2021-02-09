@@ -85,7 +85,7 @@ export default function UnitDisplay(props) {
         console.log("toggle active running:", currentUnit);
         if(currentUnit.state==="off") {
             //if we were turned off, set mode to auto by default (determine which auto type in the autocheck fn)
-            autoCheck();
+            autoCheck(currentUnit.desiredTemp);
         }
         else {
             console.log("setting mode to off");
@@ -94,33 +94,39 @@ export default function UnitDisplay(props) {
         }
     }
 
-    const autoCheck = ()=>{
+    const autoCheck = (setTemp)=>{
         console.log("at the start of autocheck the state is this:", currentUnit);
         // if its hot, cool
-        if(currentTemp>currentUnit.desiredTemp){
+        if(currentTemp>setTemp){
             //we won't cool if it's less than 0 C outside
             if(currentOutdoor>0){
                 console.log("autocheck setting mode to auto_cool");
-                setCurrentUnit({...currentUnit, state: "auto_cool"});
-                storeUnitState({id: currentUnit.id, state: "auto_cool", desiredTemp: currentUnit.desiredTemp});
+                setCurrentUnit({...currentUnit, desiredTemp:setTemp, state: "auto_cool"});
+                storeUnitState({id: currentUnit.id, state: "auto_cool", desiredTemp: setTemp});
                 setTimeout(()=>{console.log("autocheck set currentUnit to: ", currentUnit)}, 1000);
             } else {
                 console.log("autocheck setting mode to auto_standby");
-                setCurrentUnit({...currentUnit, state: "Auto_standby"});
-                storeUnitState({id: currentUnit.id, state: "Auto_standby", desiredTemp: currentUnit.desiredTemp});
+                setCurrentUnit({...currentUnit, desiredTemp:setTemp, state: "Auto_standby"});
+                storeUnitState({id: currentUnit.id, state: "Auto_standby", desiredTemp: setTemp});
                 setTimeout(()=>{console.log("autocheck set currentUnit to: ", currentUnit)}, 1000);
             }
-        } else if (currentTemp<currentUnit.desiredTemp){ //if its cold, heat
+        } else if (currentTemp<setTemp){ //if its cold, heat
             console.log("autocheck setting mode to auto_heat");
-            setCurrentUnit({...currentUnit, state: "auto_heat"});
-            storeUnitState({id: currentUnit.id, state: "auto_heat", desiredTemp: currentUnit.desiredTemp});
+            setCurrentUnit({...currentUnit, desiredTemp:setTemp, state: "auto_heat"});
+            storeUnitState({id: currentUnit.id, state: "auto_heat", desiredTemp: setTemp});
             setTimeout(()=>{console.log("autocheck set currentUnit to: ", currentUnit)}, 1000);
         } else { //if its exactly what we want, stand by
             console.log("autocheck setting mode to auto_standby");
-            setCurrentUnit({...currentUnit, state: "Auto_standby"});
-            storeUnitState({id: currentUnit.id, state: "Auto_standby", desiredTemp: currentUnit.desiredTemp});
+            setCurrentUnit({...currentUnit, desiredTemp:setTemp, state: "Auto_standby"});
+            storeUnitState({id: currentUnit.id, state: "Auto_standby", desiredTemp: setTemp});
             setTimeout(()=>{console.log("autocheck set currentUnit to: ", currentUnit)}, 1000);
         }
+    }
+
+    const setTemperature = (amount)=>{
+        let modifiedSetTemp = currentUnit.desiredTemp+amount;
+        //because we only set desired temp in auto mode
+        autoCheck(modifiedSetTemp);
     }
 
     //when a new unit is loaded reset the data grabber
@@ -135,6 +141,9 @@ export default function UnitDisplay(props) {
         setActiveTracker(setInterval(()=>{
             getData("temperature-1", 15);
             getData("outdoor-1", 15);
+            if(currentUnit.state==="auto_heat"||currentUnit.state==="auto_cool"||currentUnit.state==="Auto_standby"){
+                autoCheck(currentUnit.desiredTemp);
+            }
         }, 60000)); //60000 is 1 minute, an acceptable refresh rate for sensors that update every 5 minutes
 
         //if we switch to a new unit, we load that unit's data from storage if any
@@ -168,25 +177,33 @@ export default function UnitDisplay(props) {
             </div>
             {currentUnit.state!=="off" &&
             <div>
+                {/* if we're in auto mode, render a temperature picker */}
+                {currentUnit.state.includes("u", 1) && 
                 <div>
                     Current Desired Temperature: <br />
-                    <div onClick={()=>{console.log("increasing temp by 1")}}>+</div>
+                    <div onClick={()=>{setTemperature(1)}}>+</div>
                     {currentUnit.desiredTemp}
-                    <div onClick={()=>{console.log("decreasing temp by 1")}}>-</div>
-                </div>
+                    <div onClick={()=>{setTemperature(-1)}}>-</div>
+                </div>}
+                
                 <div onClick={()=>{
                     // toggleUnitState(unit, "heat");
                     setCurrentUnit({...currentUnit, state: "heat"});
-                    console.log("set current unit state to heating");
+                    storeUnitState({...currentUnit, state: "heat"});
                 }}>Heat</div>
                 <div onClick={()=>{
-                    setCurrentUnit({...currentUnit, state: "cool"});
-                    console.log("set current unit state to cool");
+                    if(currentOutdoor>0){
+                        setCurrentUnit({...currentUnit, state: "cool"});
+                        storeUnitState({...currentUnit, state: "cool"});
+                        console.log("set current unit state to cool");
+                    } else (
+                        alert("Cannot cool unit while temperatures are at or below 0 °C")
+                    )
+                    
                 }}>Cool</div>
                 <div onClick={()=>{
                     console.log("set current unit state to auto");
-                    setCurrentUnit({...currentUnit, state: "Auto_standby"});
-                    autoCheck();
+                    autoCheck(currentUnit.desiredTemp);
                 }}>Auto</div>
             </div>}
             Indoor Temperature: {currentTemp}<br/>

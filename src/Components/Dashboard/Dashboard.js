@@ -78,16 +78,16 @@ export default function Dashboard() {
                 <div className={`sidebar sidebar--${sidebar}`}>
                     <img src={hamburger} onClick={()=>{setSidebar(!sidebar)}}className={`sidebar__showButton sidebar__showButton--${sidebar}`} />
                     <div className="dash__registerMore" onClick={register}>Register New Thermostat</div>
-                    <UnitList units={units} key={units} select={select}/>
+                    <UnitList units={units} key={units} selectedUnit={selectedUnit} select={select}/>
                 </div>
                 {selectedUnit && <UnitDisplay unit={selectedUnit} />}
             </div>
         )
     } else {
         return (
-            <div className="dashboard">
-                You have no thermostats registered
-                <div className="dash__registerFirst" onClick={register}>Register a Thermostat</div>
+            <div className="emptyboard">
+                <div className="emptyboard__message">You have no thermostats registered. Click the "Register Thermostat" button to get started.</div>
+                <div className="dash__registerFirst" onClick={register}>Register Thermostat</div>
             </div>
         )
     }

@@ -198,7 +198,6 @@ export default function UnitDisplay(props) {
                 {currentUnit.state.includes('_c',4)&& "Auto - Cooling"}
                 {currentUnit.state.includes('_h',4)&& "Auto - Heating"}
                 {currentUnit.state.includes('f',1)&& "Off"}
-
             </div>
             <div className="unitDisplay__content">
                 <div className="unitDisplay__temperature">
@@ -221,9 +220,9 @@ export default function UnitDisplay(props) {
                     <div className="control-panel__setTemp">
                         Desired Temperature:
                         <div className="control-panel__setTempWidget">
-                            <div onClick={()=>{setTemperature(0.25)}}>+</div>
-                            {desiredTemp}
-                            <div onClick={()=>{setTemperature(-0.25)}}>-</div>
+                            <div onClick={()=>{setTemperature(-1)}} className="control-panel__tempButton">-</div>
+                            <div className="control-panel__tempReadout">{desiredTemp}</div>
+                            <div onClick={()=>{setTemperature(1)}} className="control-panel__tempButton">+</div>
                         </div>
                     </div>}
                     <div className="control-panel__modePicker">
@@ -235,7 +234,7 @@ export default function UnitDisplay(props) {
                             Axios.patch(thermostatURL+unitID+"/", 
                                 {state: "heat"}
                             );
-                        }}>Heat</div>
+                        }} className="control-panel__modeButton">Heat</div>
                         <div onClick={()=>{
                             if(currentOutdoor>0){
                                 setCurrentUnit({...currentUnit, state: "cool"});
@@ -248,15 +247,15 @@ export default function UnitDisplay(props) {
                                 alert("Cannot cool unit while temperatures are at or below 0 °C")
                             )
                             
-                        }}>Cool</div>
+                        }} className="control-panel__modeButton">Cool</div>
                         <div onClick={()=>{
                             autoCheck(unitID, currentUnit.desiredTemp);
-                        }}>Auto</div>
+                        }} className="control-panel__modeButton">Auto</div>
                     </div>
                 </div>}
                 
             </div>
-            <div onClick={()=>{toggleActive()}}>
+            <div onClick={()=>{toggleActive()}} className="toggleButton">
                 {currentUnit.state==="off" && "Turn On"}
                 {currentUnit.state!=="off" && "Turn Off"}
             </div>

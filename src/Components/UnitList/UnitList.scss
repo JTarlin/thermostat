@@ -1,3 +1,4 @@
+@import "../../Partials/colors";
 
 .unitList {
     &__box {
@@ -12,5 +13,19 @@
         display: flex;
         align-items: center;
         justify-content: center;
+
+        &--selected {
+            background-color: $ui-blue;
+            color: white;
+        }
+
+        &:last-of-type {
+            border-bottom: 1px solid black;
+        }
+
+        &:hover, &:active {
+            background-color: $offwhite;
+            cursor: pointer;
+        }
     }
 }

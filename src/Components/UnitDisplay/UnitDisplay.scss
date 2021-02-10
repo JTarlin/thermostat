@@ -1,3 +1,26 @@
+//import partials
+@import "../../Partials/mediaqueries";
+@import "../../Partials/colors";
+
+.buttonStyle {
+    padding: 5px 10px;
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color:white;
+    color: $ui-blue;
+
+    &:hover, &:active {
+        background-color: $ui-blue;
+        color: white;
+        cursor: pointer;
+    }
+}
+
+.borderStyle {
+    border: 1px solid $ui-blue;
+}
 
 .unitDisplay {
     flex-grow: 1;
@@ -7,10 +30,17 @@
 
     &__title {
         font-size: 30px;
+        font-weight: bold;
         margin-top: 30px;
+        color: $ui-blue;
+
+        @include tablet {
+            font-size: 60px;
+        }
     }
 
     &__currentState {
+        margin-top: 15px;
         background-color: green;
         color: white;
         padding: 5px 10px;
@@ -48,15 +78,23 @@
         width: 100%;
         margin: 30px 0;
         display: flex;
+        flex-direction: column;
         justify-content: center;
+
+        @include tablet {
+            flex-direction: row;
+        }
     }
 
     &__temperature {
         display: flex;
         flex-direction: column;
         align-items: center;
-        
-        width: 50%;
+        width: 100%;
+
+        @include tablet {
+            width: 50%;
+        }
     }
 }
 
@@ -70,7 +108,11 @@
     align-items: center;
     justify-content: space-around;
     height: 280px;
-    width: 50%;
+    width: 100%;
+
+    @include tablet {
+        width: 50%;
+    }
 
     &__setTemp {
         display: flex;
@@ -84,6 +126,23 @@
         align-items: center;
     }
 
+    &__tempButton {
+        @extend .buttonStyle;
+        @extend .borderStyle;
+        height: 20px;
+        width: 20px;
+        padding: 0;
+        line-height: 10px;
+        border-radius: 50%;
+        margin: 0 5px;
+    }
+
+    &__tempReadout {
+        font-weight: bold;
+        font-size: 50px;
+        color: $ui-blue;
+    }
+
     &__modePicker {
         height: 150px;
         display: flex;
@@ -91,5 +150,15 @@
         align-items: center;
         justify-content: space-between;
     }
+
+    &__modeButton {
+        @extend .buttonStyle;
+        @extend .borderStyle;
+    }
+}
+
+.toggleButton {
+    @extend .buttonStyle;
+    @extend .borderStyle;
 }
 

@@ -1,10 +1,42 @@
 //import partials
 @import "../../Partials/mediaqueries";
+@import "../../Partials/colors";
+
+.buttonStyle {
+    padding: 5px 10px;
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: $ui-blue;
+
+    &:hover {
+        background-color: $ui-blue;
+        color: white;
+        cursor: pointer;
+    }
+}
+
+.borderStyle {
+    border: 1px solid $ui-blue;
+}
+
+.emptyboard {
+    display: flex;
+    height: 100%;
+    flex-direction: column;
+    align-items: center;
+
+    &__message {
+        margin: 30px 30px;
+    }
+}
 
 .dashboard {
     display: flex;
     height: 100%;
     flex-direction: row;
+    background-color: $offwhite
 }
 
 .sidebar {
@@ -16,9 +48,14 @@
     border-right: 1px solid black;
     box-sizing: border-box;
     transition: all 1s ease;
+    background-color: white;
 
     @include tablet {
         width: 200px;
+    }
+
+    @include desktop {
+        width: 300px;
     }
 
     &--true {
@@ -45,21 +82,22 @@
 
 .dash {
     &__registerMore {
+        @extend .buttonStyle;
+        @extend .borderStyle;
         text-align: center;
-        border: 1px solid black;
-        border-radius: 10px;
-        background-color: blue;
-        color: white;
         height: 40px;
-        width: 150px;
+        width: 160px;
+        margin: 10px 0;
+
+        @include tablet {
+            width: 80%;
+        }
     }
 
     &__registerFirst {
+        @extend .buttonStyle;
+        @extend .borderStyle;
         text-align: center;
-        border: 1px solid black;
-        border-radius: 10px;
-        background-color: blue;
-        color: white;
         height: 60px;
         width: 250px;
     }

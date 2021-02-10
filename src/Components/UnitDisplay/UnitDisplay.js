@@ -171,7 +171,7 @@ export default function UnitDisplay(props) {
         }
 
         //run autoCheck on new display load to ensure it updates properly for changed temperatures
-        if(currentUnit.state.includes("u", 1)){
+        if(currentUnit.id===unitID && currentUnit.state.includes("u", 1)){ //checks if we're in an auto mode
             autoCheck(unitID, desiredTemp);
         }
     }, [unitID])
@@ -200,9 +200,11 @@ export default function UnitDisplay(props) {
             <div className={`unitDisplay__currentState unitDisplay__currentState--${currentUnit.state}`}>
                 {currentUnit.state==="cool"&& "Cooling"}
                 {currentUnit.state==="heat"&& "Heating"}
-                {currentUnit.state.includes('_s',1)&& "Auto - Standby"}
-                {currentUnit.state.includes('_c',1)&& "Auto - Cooling"}
-                {currentUnit.state.includes('_h',1)&& "Auto - Heating"}
+                {currentUnit.state.includes('_s',4)&& "Auto - Standby"}
+                {currentUnit.state.includes('_c',4)&& "Auto - Cooling"}
+                {currentUnit.state.includes('_h',4)&& "Auto - Heating"}
+                {currentUnit.state.includes('f',1)&& "Off"}
+
             </div>
             <div className="unitDisplay__content">
                 <div onClick={()=>{toggleActive()}}>

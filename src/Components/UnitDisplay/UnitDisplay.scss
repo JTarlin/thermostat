@@ -26,6 +26,22 @@
         &--heat {
             background-color: red;
         }
+
+        &--auto_cool {
+            background-color:aqua;
+        }
+
+        &--auto_heat {
+            background-color:orange;
+        }
+
+        &--Auto_standby {
+            background-color:green;
+        }
+
+        &--off {
+            background-color:gray;
+        }
     }
 
     &__content {

@@ -62,7 +62,7 @@ export default function Dashboard() {
                 }
             })
             .catch(function (error) {
-                alert(error);
+                alert("trouble registering unit: ",error);
             });
     }
 

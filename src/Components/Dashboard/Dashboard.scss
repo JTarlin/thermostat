@@ -22,6 +22,7 @@
 }
 
 .emptyboard {
+    margin-top: 40px;
     display: flex;
     height: 100%;
     flex-direction: column;
@@ -33,6 +34,7 @@
 }
 
 .dashboard {
+    margin-top: 40px;
     display: flex;
     height: 100%;
     flex-direction: row;
@@ -40,11 +42,12 @@
 }
 
 .sidebar {
-    display:flex;
-    flex-direction: column;
-    align-items: center;
     width: 0px;
-    overflow: hidden;
+    height: 100%;
+    position: fixed;
+    z-index: 10;
+    overflow-x: hidden;
+    overflow-y: scroll;
     border-right: 1px solid black;
     box-sizing: border-box;
     transition: all 1s ease;
@@ -60,6 +63,15 @@
 
     &--true {
         width: 200px;
+    }
+
+    &__inner {
+        height: 100%;
+        width: 100%;
+        display:flex;
+        flex-direction: column;
+        align-items: center;
+
     }
 
     &__showButton{

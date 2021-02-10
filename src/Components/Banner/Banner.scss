@@ -4,6 +4,11 @@
     display: flex;
     align-items: center;
     border-bottom: 2px solid black;
+    position: fixed;
+    top: 0;
+    z-index: 11;
+    background-color: white;
+    box-sizing: border-box;
 }
 
 .banner-logo {

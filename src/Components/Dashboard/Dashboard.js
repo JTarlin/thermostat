@@ -75,10 +75,12 @@ export default function Dashboard() {
     if(units){
         return (
             <div className="dashboard">
+                <img src={hamburger} onClick={()=>{setSidebar(!sidebar)}}className={`sidebar__showButton sidebar__showButton--${sidebar}`} />
                 <div className={`sidebar sidebar--${sidebar}`}>
-                    <img src={hamburger} onClick={()=>{setSidebar(!sidebar)}}className={`sidebar__showButton sidebar__showButton--${sidebar}`} />
-                    <div className="dash__registerMore" onClick={register}>Register New Thermostat</div>
-                    <UnitList units={units} key={units} selectedUnit={selectedUnit} select={select}/>
+                    <div className="sidebar__inner">
+                        <div className="dash__registerMore" onClick={register}>Register New Thermostat</div>
+                        <UnitList units={units} key={units} selectedUnit={selectedUnit} select={select}/>
+                    </div>
                 </div>
                 {selectedUnit && <UnitDisplay unit={selectedUnit} />}
             </div>

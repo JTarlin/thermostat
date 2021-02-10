@@ -2,12 +2,16 @@
 import Axios from "axios";
 import {useEffect, useState} from "react";
 
+//styling imports
+import "./UnitDisplay.scss";
+
 //api url for sensors
 const sensorURL = "http://api-staging.paritygo.com/sensors/api/sensors/";
 const thermostatURL = "https://api-staging.paritygo.com/sensors/api/thermostat/";
 
 export default function UnitDisplay(props) {
-    const unitID = props.unitID;
+    const unitID = props.unit.id;
+    const unitName = props.unit.name;
     //the unit being displayed is held in state
     const [currentUnit, setCurrentUnit] = useState({id: unitID, desiredTemp: 25, state: "off"});
     const [desiredTemp, setDesiredTemp] = useState(25);
@@ -165,9 +169,14 @@ export default function UnitDisplay(props) {
                 setDesiredTemp(unitInfo[unitID].setTemp);
             }
         }
+
+        //run autoCheck on new display load to ensure it updates properly for changed temperatures
+        if(currentUnit.state.includes("u", 1)){
+            autoCheck(unitID, desiredTemp);
+        }
     }, [unitID])
 
-    //refresh the data regularly to check if temperature has changed (every 10000mS)
+    //refresh the data regularly to check if temperature has changed (every 5000mS)
     useEffect(()=>{
         //clear any excess trackers so that only one is active at a time
         clearTimeout(activeTracker);
@@ -175,56 +184,72 @@ export default function UnitDisplay(props) {
         setActiveTracker(setTimeout(()=>{
             getData("temperature-1", 15);
             getData("outdoor-1", 15);
-        }, 5000)); //60000 is 1 minute, an acceptable refresh rate for sensors that update every 5 minutes
+        }, 5000)); //5000 is 5 seconds, an acceptable refresh rate for sensors that update every 5 minutes
     }, [unitID, currentTemp, currentOutdoor, tempData, outdoorData])
 
+    //if current temperature changes, update auto-mode to match
+    useEffect(()=>{
+        if(currentUnit.state.includes("u", 1)){
+            autoCheck(unitID, desiredTemp);
+        }
+    }, [currentTemp])
+
     return(
-        <div>
-            {currentUnit.id} <br/>
-            {currentUnit.state} <br/>
-            <div onClick={()=>{toggleActive()}}>
-                {currentUnit.state==="off" && "Turn On"}
-                {currentUnit.state!=="off" && "Turn Off"}
+        <div className="unitDisplay">
+            <div className="unitDisplay__title">{unitName}</div>
+            <div className={`unitDisplay__currentState unitDisplay__currentState--${currentUnit.state}`}>
+                {currentUnit.state==="cool"&& "Cooling"}
+                {currentUnit.state==="heat"&& "Heating"}
+                {currentUnit.state.includes('_s',1)&& "Auto - Standby"}
+                {currentUnit.state.includes('_c',1)&& "Auto - Cooling"}
+                {currentUnit.state.includes('_h',1)&& "Auto - Heating"}
             </div>
-            {currentUnit.state!=="off" &&
-            <div>
-                {/* if we're in auto mode, render a temperature picker */}
-                {currentUnit.state.includes("u", 1) && 
+            <div className="unitDisplay__content">
+                <div onClick={()=>{toggleActive()}}>
+                    {currentUnit.state==="off" && "Turn On"}
+                    {currentUnit.state!=="off" && "Turn Off"}
+                </div>
+
+                {currentUnit.state!=="off" &&
                 <div>
-                    Current Desired Temperature: <br />
-                    <div onClick={()=>{setTemperature(1)}}>+</div>
-                    {desiredTemp}
-                    <div onClick={()=>{setTemperature(-1)}}>-</div>
-                </div>}
-                
-                <div onClick={()=>{
-                    // toggleUnitState(unit, "heat");
-                    setCurrentUnit({...currentUnit, state: "heat"});
-                    storeUnitState({...currentUnit, state: "heat"});
-                    //update the unit mode on the backend
-                    Axios.patch(thermostatURL+unitID+"/", 
-                        {state: "heat"}
-                    );
-                }}>Heat</div>
-                <div onClick={()=>{
-                    if(currentOutdoor>0){
-                        setCurrentUnit({...currentUnit, state: "cool"});
-                        storeUnitState({...currentUnit, state: "cool"});
+                    {/* if we're in auto mode, render a temperature picker */}
+                    {currentUnit.state.includes("u", 1) && 
+                    <div>
+                        Current Desired Temperature: <br />
+                        <div onClick={()=>{setTemperature(0.25)}}>+</div>
+                        {desiredTemp}
+                        <div onClick={()=>{setTemperature(-0.25)}}>-</div>
+                    </div>}
+                    
+                    <div onClick={()=>{
+                        // toggleUnitState(unit, "heat");
+                        setCurrentUnit({...currentUnit, state: "heat"});
+                        storeUnitState({...currentUnit, state: "heat"});
                         //update the unit mode on the backend
                         Axios.patch(thermostatURL+unitID+"/", 
-                            {state: "cool"}
+                            {state: "heat"}
                         );
-                    } else (
-                        alert("Cannot cool unit while temperatures are at or below 0 °C")
-                    )
-                    
-                }}>Cool</div>
-                <div onClick={()=>{
-                    autoCheck(unitID, currentUnit.desiredTemp);
-                }}>Auto</div>
-            </div>}
-            Indoor Temperature: {currentTemp}<br/>
-            Outdoor Temperature: {currentOutdoor}
+                    }}>Heat</div>
+                    <div onClick={()=>{
+                        if(currentOutdoor>0){
+                            setCurrentUnit({...currentUnit, state: "cool"});
+                            storeUnitState({...currentUnit, state: "cool"});
+                            //update the unit mode on the backend
+                            Axios.patch(thermostatURL+unitID+"/", 
+                                {state: "cool"}
+                            );
+                        } else (
+                            alert("Cannot cool unit while temperatures are at or below 0 °C")
+                        )
+                        
+                    }}>Cool</div>
+                    <div onClick={()=>{
+                        autoCheck(unitID, currentUnit.desiredTemp);
+                    }}>Auto</div>
+                </div>}
+                Indoor Temperature: {currentTemp&&currentTemp.toFixed(1)}<br/>
+                Outdoor Temperature: {currentOutdoor&&currentOutdoor.toFixed(1)}
+            </div>
         </div>
     )
     

@@ -9,19 +9,21 @@ import UnitDisplay from "../UnitDisplay/UnitDisplay";
 //styling import
 import "./Dashboard.scss";
 
+//image imports
+import hamburger from "../../Assets/list.svg";
+
 //constant urls for api calls
 const apiURL = "https://api-staging.paritygo.com/sensors/api/thermostat/";
 
 export default function Dashboard() {
-
-    console.log("dashboard re-render");
-
     const storedUnits = JSON.parse(localStorage.getItem("units"));
     let unitArray;
     if(storedUnits) {
         unitArray = storedUnits.unitArr;
     } else {unitArray = null;}
 
+    //on mobile view we can hide and show the sidebar by clicking a button
+    const [sidebar, setSidebar] = useState(false);
     //state tracks the info of each housing unit, gets info from local browser storage
     const [units, setUnits] = useState(unitArray);
     //state tracks currently selected housing unit/thermostat
@@ -41,7 +43,6 @@ export default function Dashboard() {
                     const newID = response.data.uid_hash;
                     let newUnitArr = units; //new reference to array so that state update causes re-render
                     let newNameNum = units.length+1;
-                    console.log("when registering a new unit, the units array is", units);
                     newUnitArr.push({id: newID, name: "Unit "+(newNameNum)}); //all the dashboard needs to know is the uid hash
                     setUnits(newUnitArr);
                     setSelectedUnit({id: newID, name: "Unit "+(newNameNum)});
@@ -70,36 +71,14 @@ export default function Dashboard() {
         setSelectedUnit(unit);
     }
 
-    //toggle a unit on or off, heat or cool, auto, autoheat, autocool, standby, etc
-    const toggleUnitState = (unitToChange, newState)=>{
-        console.log(unitToChange.setTemp + "SHARK :)");
-        let modifiedUnit = {id: unitToChange.id, state: newState, setTemp: unitToChange.setTemp}; //create new object to store modified unit
-        let modifiedUnitArray = units.unitArr;
-        for(let i=0; i<modifiedUnitArray.length;i++) {
-            if(modifiedUnitArray[i].id === unitToChange.id) {
-                modifiedUnitArray[i]=modifiedUnit;
-                break;
-            }
-        }
-        //set our state to reflect the new unit mode
-        setSelectedUnit(modifiedUnit);
-        setUnits({unitArr: modifiedUnitArray});
-        //set the local stored values to reflect the new unit mode
-        localStorage.setItem('units', JSON.stringify({unitArr: modifiedUnitArray}));
-        //update the unit mode on the backend
-        Axios.patch(apiURL+unitToChange.id+"/", 
-            {state: newState}
-        )
-    }
-
     //conditional render depending on whether there are any registered units or not
     if(units){
         return (
             <div className="dashboard">
-                <div className="sidebar">
-
-                <div className="dash__registerMore" onClick={register}>Register New Thermostat</div>
-                <UnitList units={units} key={units} select={select}/>
+                <div className={`sidebar sidebar--${sidebar}`}>
+                    <img src={hamburger} onClick={()=>{setSidebar(!sidebar)}}className={`sidebar__showButton sidebar__showButton--${sidebar}`} />
+                    <div className="dash__registerMore" onClick={register}>Register New Thermostat</div>
+                    <UnitList units={units} key={units} select={select}/>
                 </div>
                 {selectedUnit && <UnitDisplay unit={selectedUnit} />}
             </div>

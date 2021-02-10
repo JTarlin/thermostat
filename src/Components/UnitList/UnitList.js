@@ -1,7 +1,6 @@
 import "./UnitList.scss";
 
 export default function UnitList(props) {
-    console.log("unitlist re-render");
     const units = props.units;
     const select = props.select;
 

@@ -68,12 +68,6 @@ export default function UnitDisplay(props) {
                 if(sensorSlug==="temperature-1"){
                     setTempData(pastPoints);
                     setCurrentTemp(currentReading);
-                    //if the temperature reading has just changed we may want to update our auto-type
-                    console.log("In data get log the desired temp,new desired temp state, and the current indoor temp reading");
-                    console.log(unitID);
-                    console.log("the currentUnit.desiredTemp is: ", currentUnit.desiredTemp);
-                    console.log("the desiredTemp is: ", desiredTemp);
-                    console.log("current roomtemp reading: ", currentReading);
                 } else if(sensorSlug==="outdoor-1"){
                     setOutdoorData(pastPoints);
                     setCurrentOutdoor(currentReading);
@@ -97,7 +91,6 @@ export default function UnitDisplay(props) {
 
     const autoCheck = (id, setTemp)=>{
         setDesiredTemp(setTemp);
-        console.log("autocheck is running and here's the settemp: ",setTemp);
         // if its hot, cool
         if(currentTemp>setTemp){
             //we won't cool if it's less than 0 C outside

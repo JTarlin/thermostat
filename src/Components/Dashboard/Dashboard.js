@@ -77,10 +77,8 @@ export default function Dashboard() {
             <div className="dashboard">
                 <img src={hamburger} onClick={()=>{setSidebar(!sidebar)}}className={`sidebar__showButton sidebar__showButton--${sidebar}`} />
                 <div className={`sidebar sidebar--${sidebar}`}>
-                    <div className="sidebar__inner">
-                        <div className="dash__registerMore" onClick={register}>Register New Thermostat</div>
-                        <UnitList units={units} key={units} selectedUnit={selectedUnit} select={select}/>
-                    </div>
+                    <div className="dash__registerMore" onClick={register}>Register New Thermostat</div>
+                    <UnitList units={units} key={units} selectedUnit={selectedUnit} select={select}/>
                 </div>
                 {selectedUnit && <UnitDisplay unit={selectedUnit} />}
             </div>

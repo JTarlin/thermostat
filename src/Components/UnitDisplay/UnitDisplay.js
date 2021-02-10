@@ -7,7 +7,7 @@ import Thermometer from 'react-thermometer-component';
 import "./UnitDisplay.scss";
 
 //api url for sensors
-const sensorURL = "http://api-staging.paritygo.com/sensors/api/sensors/";
+const sensorURL = "https://api-staging.paritygo.com/sensors/api/sensors/";
 const thermostatURL = "https://api-staging.paritygo.com/sensors/api/thermostat/";
 
 export default function UnitDisplay(props) {
@@ -75,7 +75,7 @@ export default function UnitDisplay(props) {
                 }
             })
             .catch(function(error){
-                alert(error)
+                alert("trouble getting data from api: ",error)
             });
     }
 
